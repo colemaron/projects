@@ -1,24 +1,35 @@
 // canvas
 
 const canvas = document.getElementById("canvas")
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d", {willReadFrequently: true});
 
 // drawing
 
 const draw = {
-	circle: function(vec, r) {
+	circle: function(vec, r, outline = false, color = "white") {
 		ctx.beginPath();
 		ctx.arc(vec.x, vec.y, r, 0, 2 * Math.PI);
-		ctx.fillStyle = "white";
-		ctx.fill();
+		ctx.lineWidth = 4;
+	
+		if (outline) {
+			ctx.strokeStyle = color;
+			ctx.stroke();
+		} else {
+			ctx.fillStyle = color;
+			ctx.fill();
+		}
 	}
 }
 
 // update canvas size
 
 function resizeCanvas() {
+	const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
+
+	ctx.putImageData(image, 0, 0);
 }
 
 window.addEventListener('resize', resizeCanvas);
@@ -29,10 +40,6 @@ resizeCanvas()
 
 function clamp(n, nMin, nMax) {
 	return Math.min(Math.max(n, nMin), nMax)
-}
-
-function between(n, lower, upper) {
-	return n > lower && n < upper;
 }
 
 class Vector2 {
@@ -53,11 +60,6 @@ class Vector2 {
 
 	dot(vec) {
 		return this.x * vec.x + this.y * vec.y;
-	}
-
-	clamp(max) {
-		// if magnitude exceeds max, return clamped, else return same
-		return this.magnitude() > max ? this.normalize().mul(max) : this;
 	}
 
 	clampComponents(xMin, xMax, yMin, yMax) {
@@ -87,12 +89,10 @@ class Vector2 {
 
 // particles
 
-const targetFramerate = 60;
-
 const gravity = new Vector2(0, 9.8);
-const restitution = 0.9;
+const restitution = 0.75;
 
-const particle_count = 1000;
+const particle_count = 500;
 const particle_radius = 10;
 
 class particle {
@@ -107,20 +107,63 @@ class particle {
 	}
 }
 
-particles = Array.from({length: particle_count}, () => new particle);
+const particles = Array.from({length: particle_count}, () => new particle);
+
+// grab
+
+let mousePos = new Vector2();
+let mouseDown = false;
+
+window.onmousemove = (event) => {
+	mousePos = new Vector2(event.x, event.y);
+}
+
+window.addEventListener("mousedown", (event) => {
+	mousePos = new Vector2(event.x, event.y)
+	mouseDown = true;
+})
+
+window.addEventListener("mouseup", () => {
+	mouseDown = false;
+})
 
 // draw
 
-const dt = 1 / targetFramerate;
+let last_update = Date.now();
 
-setInterval(() => {
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
+window.requestAnimationFrame(update)
+
+function update() {
+	// get dt
+
+	const now = Date.now();
+	const dt = (now - last_update) / 1000;
+	last_update = now;
+
+	// clear canvas
+
+	ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+	// simulate
 
 	particles.forEach(particle => {
 		let pos = particle.pos;
 		let vel = particle.vel;
 
 		vel = vel.add(gravity);
+
+		// grab
+
+		grab_radius = Math.min(canvas.width, canvas.height) / 4;
+
+		if (mouseDown) {
+			const toward = mousePos.sub(pos);
+			const distance = toward.magnitude();
+
+			if (distance < grab_radius) {
+				vel = vel.add(toward);
+			}
+		}
 
 		// bounce off others
 
@@ -130,7 +173,9 @@ setInterval(() => {
 			const away = pos.sub(other.pos);
 			const distance = away.magnitude();
 
-			if (between(distance, 0, particle_radius * 2)) {
+			// simulate
+
+			if (distance > 0 && distance < particle_radius * 2) {
 				const normal = away.normalize();
 
 				const relVel = vel.sub(other.vel);
@@ -143,7 +188,7 @@ setInterval(() => {
 					other.vel = other.vel.add(impulse);
 
 					// fix overlap
-
+					
 					const overlap = particle_radius * 2 - distance;
 					const correction = normal.mult(overlap / 2);
 
@@ -159,24 +204,36 @@ setInterval(() => {
 		const xMax = canvas.width - particle_radius;
 		const yMax = canvas.height - particle_radius;
 
-		if (pos.x < xyMin || pos.x > xMax) {
-			vel = new Vector2(vel.x * -1, vel.y);
+		if (pos.x <= xyMin || pos.x >= xMax) {
+			vel = new Vector2(vel.x * -restitution, vel.y);
 		}
 
-		if (pos.y < xyMin || pos.y > yMax) {
-			vel = new Vector2(vel.x, vel.y * -1);
+		if (pos.y <= xyMin || pos.y >= yMax) {
+			vel = new Vector2(vel.x, vel.y * -restitution);
+
+			if (pos.y == xyMin) {
+				console.log(vel);
+			}
 		}
 
 		// update
 
-		pos = pos.clampComponents(xyMin, xMax, xyMin, yMax);
 		pos = pos.add(vel.mult(dt));
+		pos = pos.clampComponents(xyMin, xMax, xyMin, yMax);
 
 		// reasign variables
 
 		particle.pos = pos;
 		particle.vel = vel;
 
-		draw.circle(particle.pos, particle_radius);
+		draw.circle(particle.pos, particle_radius, false, "lightskyblue");
 	});
-}, dt * 1000);
+
+	// grab - per frame
+
+	if (mouseDown) {
+		draw.circle(mousePos, grab_radius, true, "red");
+	}
+
+	window.requestAnimationFrame(update)
+}
