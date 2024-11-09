@@ -92,8 +92,10 @@ class Vector2 {
 const gravity = new Vector2(0, 9.8);
 const restitution = 0.75;
 
-const particle_count = 500;
-const particle_radius = 10;
+const particle_count = 1000;
+const particle_radius = 3
+
+grab_radius = particle_radius * 50
 
 class particle {
 	constructor() {
@@ -101,18 +103,20 @@ class particle {
 		const r = Math.min(canvas.width / 2, canvas.height / 2) * Math.sqrt(Math.random());
 
 		const windowOffset = new Vector2(canvas.width / 2, canvas.height / 2)
+		const final = new Vector2(r * Math.cos(theta), r * Math.sin(theta))
 
-		this.pos = new Vector2(r * Math.cos(theta), r * Math.sin(theta)).add(windowOffset);
+		this.pos = final.add(windowOffset);
 		this.vel = new Vector2();
 	}
 }
 
-const particles = Array.from({length: particle_count}, () => new particle);
+const particles = Array.from({length: particle_count}, () => new particle());
 
 // grab
 
 let mousePos = new Vector2();
 let mouseDown = false;
+let ctrlDown = false;
 
 window.onmousemove = (event) => {
 	mousePos = new Vector2(event.x, event.y);
@@ -126,6 +130,14 @@ window.addEventListener("mousedown", (event) => {
 window.addEventListener("mouseup", () => {
 	mouseDown = false;
 })
+
+window.onkeydown = (event) => {
+	ctrlDown = event.ctrlKey;
+}
+
+window.onkeyup = (event) => {
+	ctrlDown = event.ctrlKey;
+}
 
 // draw
 
@@ -154,14 +166,16 @@ function update() {
 
 		// grab
 
-		grab_radius = Math.min(canvas.width, canvas.height) / 4;
-
 		if (mouseDown) {
 			const toward = mousePos.sub(pos);
 			const distance = toward.magnitude();
 
 			if (distance < grab_radius) {
-				vel = vel.add(toward);
+				if (ctrlDown) {
+					vel = vel.sub(toward);
+				} else {
+					vel = vel.add(toward);
+				}
 			}
 		}
 
@@ -177,9 +191,7 @@ function update() {
 
 			if (distance > 0 && distance < particle_radius * 2) {
 				const normal = away.normalize();
-
-				const relVel = vel.sub(other.vel);
-				const relVelNorm = relVel.dot(normal);
+				const relVelNorm = vel.sub(other.vel).dot(normal);
 
 				if (relVelNorm < 0) {
 					const impulse = normal.mult(relVelNorm * restitution);
@@ -198,11 +210,17 @@ function update() {
 			}
 		})
 
+		// update
+
+		pos = pos.add(vel.mult(dt));
+
 		// keep in window
 
 		const xyMin = particle_radius;
 		const xMax = canvas.width - particle_radius;
 		const yMax = canvas.height - particle_radius;
+
+		pos = pos.clampComponents(xyMin, xMax, xyMin, yMax);
 
 		if (pos.x <= xyMin || pos.x >= xMax) {
 			vel = new Vector2(vel.x * -restitution, vel.y);
@@ -210,29 +228,24 @@ function update() {
 
 		if (pos.y <= xyMin || pos.y >= yMax) {
 			vel = new Vector2(vel.x, vel.y * -restitution);
-
-			if (pos.y == xyMin) {
-				console.log(vel);
-			}
 		}
-
-		// update
-
-		pos = pos.add(vel.mult(dt));
-		pos = pos.clampComponents(xyMin, xMax, xyMin, yMax);
 
 		// reasign variables
 
 		particle.pos = pos;
 		particle.vel = vel;
 
-		draw.circle(particle.pos, particle_radius, false, "lightskyblue");
+		draw.circle(particle.pos, particle_radius);
 	});
 
 	// grab - per frame
 
 	if (mouseDown) {
-		draw.circle(mousePos, grab_radius, true, "red");
+		if (ctrlDown) {
+			draw.circle(mousePos, grab_radius, true, "rgb(255, 0, 0)");
+		} else {
+			draw.circle(mousePos, grab_radius, true, "rgb(0, 255, 0)");
+		}
 	}
 
 	window.requestAnimationFrame(update)
