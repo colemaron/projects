@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+
+* {
+	box-sizing: border-box;
+	font-family: Poppins;
+	color: white;
+	margin: 0;
+	padding: 0;
+
+	user-select: none;
+}
+
+body {
+	background-color: black;
+	overflow: hidden;
+}
+
+#canvas {
+	position: fixed;
+	z-index: -1;
+	top: 0;
+	left: 0;
+}
+
+#canvas:hover {
+	~ #hover-value {
+		display: block;
+	}
+}
+
+#inputs {
+	padding: 1rem;
+	width: 25%;
+
+	background-color: rgba(255, 255, 255, 0.1);
+	border-end-end-radius: 1rem;
+	backdrop-filter: blur(5px);
+
+	display: grid;
+	grid-template-columns: max-content 1fr minmax(6ch, max-content);
+	gap: 1rem;
+}
+
+.value {
+	position: fixed;
+
+	pointer-events: none;
+}
+
+#hover-value {
+	background-color: transparent;
+	padding: 0.25rem;
+	display: none;
+	color: white;
+}
+
+#slider-value {
+	display: none;
+	background-color: white;
+	color: black;
+	padding: 0.5rem 1rem;
+	border-radius: 0.75rem;
+}
+
+input[type="range"]:hover {
+	~ #slider-value {
+		display: block;
+	}
+}
+
+input[type="range"] {
+	appearance: none;
+	background-color: transparent;
+
+	cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+	padding: 3px;
+	background-color: black;
+	border-radius: 100vw;
+}
