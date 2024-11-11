@@ -18,7 +18,10 @@ class Vector2 {
 	sub(vec) {return new Vector2(this._x - vec._x, this._y - vec._y);}
 
 	mul(int) {return new Vector2(this._x * int, this._y * int);}
-	div(int) {return new Vector2(this._x / int, this._y / int);}
+	div(int) {
+		if (int === 0) {int = 0.00001};
+		return new Vector2(this._x / int, this._y / int);
+	}
 
 	// attritutes
 
@@ -51,48 +54,52 @@ class Vector2 {
 	}
 }
 
-class Clock {
-	constructor() {
-		this.last_called = window.performance.now() / 1000;
-		this.elapsed = 0;
-		this.dt = 0;
-	}
+CanvasRenderingContext2D.prototype.drawCircle = function(pos, radius, color = "white") {
+	this.beginPath();
+	this.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+	this.fillStyle = color;
+	this.fill();
+}
 
-	tick() {
-		const now = window.performance.now() / 1000;
+CanvasRenderingContext2D.prototype.drawLine = function(from, to, width, color = "white") {
+	this.beginPath()
+	this.moveTo(from.x, from.y);
+	this.lineTo(to.x, to.y);
+	this.lineWidth = width;
+	this.strokeStyle = color;
+	this.stroke();
+}
 
-		this.dt = (now - this.last_called);
-		this.last_called = now;
-		this.elapsed = now;
+CanvasRenderingContext2D.prototype.drawArrow = function(from, to, width, color = "white") {
+	this.drawLine(from, to, width, color);
 
-		return this.dt;
-	}
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+	const size = width * 10;
+
+    this.beginPath();
+    this.moveTo(to.x, to.y);
+
+    this.lineTo(
+        to.x - size * Math.cos(angle - 0.4),
+        to.y - size * Math.sin(angle - 0.4)
+    );
+
+    this.lineTo(
+        to.x - size * Math.cos(angle + 0.4),
+        to.y - size * Math.sin(angle + 0.4)
+    );
+
+    this.lineTo(to.x, to.y);
+    this.closePath();
+
+    this.fillStyle = color;
+    this.fill();
 }
 
 const MyMath = {
-    random: function(min, max) {
-        return Math.random() * (max - min) + min;
-    },
+    random: (min, max) => Math.random() * (max - min) + min,
 
-	roundDigits: function(n, digits) {
-		const power = 10 ** digits;
-
-		return Math.round(n * power) / power
-	},
-
-	round: function(n, multiple) {
-		return Math.ceil(n / multiple) * multiple;
-	},
-
-	roundExponential: function(n, threshold, digits) {
-		const length = n.toString().length
-
-		if (length > threshold) {
-			return n.toExponential(digits);
-		} else {
-			return MyMath.roundDigits(n, digits);
-		}
-	}
+	round: (n, multiple) => Math.ceil(n / multiple) * multiple,
 };
 
-export {Vector2, Clock, MyMath};
+export {Vector2, MyMath};

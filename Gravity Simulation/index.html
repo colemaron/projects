@@ -6,6 +6,7 @@
 	<title>Document</title>
 
 	<script src="app.js" type="module" defer></script>
+	<script src="inputs.js" defer></script>
 	<link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -14,23 +15,19 @@
 	<p class="value" id="hover-value"></p>
 
 	<div id="inputs">
-		<h3 style="grid-column: span 3;">Value Inputs</h3>
+		<h3 style="grid-column: span 3;">Simulation</h3>
+
+		<label>Particle Count</label>
+		<p id="particles">0</p>
+		<br>
 
 		<label>Timestep</label>
-		<input id="timestep" type="range" min="0" max="10" step="0.01" value="0.1">
+		<input id="timestep" type="range" min="0" max="10" value="0.01" step="0.01">
+
+		<h3 style="grid-column: span 3;">Placing</h3>
+
+		<label>Mass</label>
+		<input id="mass" type="range", min="1", max="100" value="10" step="1">
 	</div>
-
-	<script>
-		const sliders = Array.from(document.querySelectorAll("input[type='range']"));
-
-		sliders.forEach(slider => {
-			const sliderValue = slider.nextSibling;
-			sliderValue.textContent = Math.round(slider.value * 10) / 10;
-
-			slider.onmousemove = (event) => {
-				sliderValue.textContent = Math.round(slider.value * 10) / 10;
-			}
-		})
-	</script>
 </body>
 </html>

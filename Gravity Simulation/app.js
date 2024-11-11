@@ -23,12 +23,14 @@ ctx.translate(winSize.x / 2, winSize.y / 2)
 
 // inputs
 
+const particleCount = document.getElementById("particles");
 const timestep = document.getElementById("timestep");
+const mass = document.getElementById("mass");
 
 // draw
 
-const textSize = 16;
-const padding = 10;
+const textSize = 12;
+const padding = 5;
 
 function drawLine(from, to, width = 1, color = "white") {
 	ctx.beginPath();
@@ -51,12 +53,6 @@ function drawText(text, x, y, color = "white") {
 
 // particles
 
-const particle_count = 500;
-const particle_spread = winSize.min / 2;
-const particle_mass_range = new Vector2(5, 10);
-
-const minDistance = 100;
-
 let particles = [];
 
 class particle {
@@ -66,32 +62,25 @@ class particle {
 		this.vel = vel;
 
 		particles.push(this);
-	}
 
-	draw() {
-		const speed = 255 / this.vel.magnitude * 10;
-
-		ctx.beginPath();
-		ctx.arc(this.pos.x, this.pos.y, this.mass, 0, Math.PI * 2);
-		ctx.fillStyle = `rgb(${speed}, 0, ${255 - speed})`;
-		ctx.fill();
+		particleCount.textContent = parseInt(particleCount.textContent) + 1;
 	}
 }
 
-for (let i = 0; i < particle_count; i++) {
-	const r = particle_spread * Math.sqrt(Math.random());
-	const theta = 2 * Math.PI * Math.random();
+// translated mouse coords
 
-	const pos = new Vector2(r * Math.cos(theta), r * Math.sin(theta));
-	const vel = pos.rotate(Math.PI / 2.5).div(20);
+function getMouseCoords(event) {
+	const transform = ctx.getTransform().invertSelf();
 
-	new particle(pos, vel, particle_mass_range.randomComponent);
+	return new Vector2(
+		transform.a * event.clientX + transform.c * event.clientY + transform.e,
+		transform.b * event.clientX + transform.d * event.clientY + transform.f
+	)
 }
-
-new particle(new Vector2, new Vector2, 50);
 
 // canvas and particle controls
 
+let mousePos = new Vector2;
 let mouseDown = false;
 
 canvas.addEventListener("mousedown", (event) => {
@@ -103,10 +92,30 @@ window.addEventListener("mouseup", (event) => {
 })
 
 window.addEventListener("mousemove", (event) => {
+	mousePos = getMouseCoords(event);
+
 	if (mouseDown) {
 		const transform = ctx.getTransform();
 
 		ctx.translate(event.movementX / transform.a, event.movementY / transform.d);
+	}
+})
+
+let dragStart = new Vector2;
+let dragging = false;
+
+window.addEventListener("keydown", (event) => {
+	if (event.key === "e" && !dragging) {
+		dragging = true;
+		dragStart = mousePos;
+	}
+})
+
+window.addEventListener("keyup", (event) => {
+	if (event.key === "e") {
+		new particle(mousePos, dragStart.sub(mousePos).div(timestep.value * 100), mass.value);
+		
+		dragging = false;
 	}
 })
 
@@ -118,30 +127,28 @@ canvas.addEventListener("mousemove", (event) => {
 	hoverValue.style.left = event.clientX + "px";
 	hoverValue.style.top = event.clientY + "px";
 
-    const rect = canvas.getBoundingClientRect();
-    const transform = ctx.getTransform().invertSelf();
+    const transformed = getMouseCoords(event);
 
-    const transformedX = MyMath.roundDigits(transform.a * event.clientX + transform.c * event.clientY + transform.e, 1);
-    const transformedY = MyMath.roundDigits(transform.b * event.clientX + transform.d * event.clientY + transform.f, 1);
-
-	hoverValue.textContent = `(${transformedX}, ${transformedY})`;
+	hoverValue.textContent = "(" + transformed.x.toPrecision(3) + ", " + transformed.y.toPrecision(3) + ")";
 })
 
 // zooming
 
-const zoomSpeed = 1.1
+const zoomSpeed = 1.1;
 let scale = 1;
 
 canvas.addEventListener("wheel", (event) => {
+	const multiplier = event.shiftKey ? 2 : 1;
+
     const scroll = Math.sign(event.deltaY);
-    const factor = scroll < 1 ? zoomSpeed : 1 / zoomSpeed;
+    const factor = scroll < 1 ? zoomSpeed * multiplier : 1 / zoomSpeed / multiplier;
 
 	const transform = ctx.getTransform()
 
     const mousePos = new Vector2(event.clientX, event.clientY);
     const newScale = scale * factor;
 
-	const mouseCanvas = new Vector2(mousePos.x - transform.e, mousePos.y - transform.f).div(scale);
+	const mouseCanvas = new Vector2(mousePos.x - transform.e, mousePos.y - transform.f).div(scale * multiplier);
 	const translate = mousePos.sub(mouseCanvas.mul(newScale));
 
     ctx.setTransform(newScale, 0, 0, newScale, translate.x, translate.y);
@@ -173,16 +180,30 @@ setInterval(() => {
 
 	const base = 2;
 	const logScale = Math.log(1 / scale) / Math.log(base);
-	const step = Math.pow(base, Math.round(logScale)) * 200;
+	let step = Math.pow(base, Math.round(logScale)) * 200;
 
 	for (let y = MyMath.round(top, step); y < MyMath.round(bottom, step); y += step) {
-		drawLine(new Vector2(left, y), new Vector2(right, y), 0.5, "rgb(100, 100, 100)");
-		drawText(MyMath.roundExponential(y, 5, 1), padding, y * scale - padding);
+		drawLine(new Vector2(left, y), new Vector2(right, y), 1, "rgba(255, 255, 255, 0.25)");
+		drawText(y === 0 ? 0 : y.toPrecision(3), padding, y * scale - padding);
 	}
 
 	for (let x = MyMath.round(left, step); x < MyMath.round(right, step); x += step) {
-		drawLine(new Vector2(x, top), new Vector2(x, bottom), 0.5, "rgb(100, 100, 100)");
-		drawText(MyMath.roundExponential(x, 5, 1), x * scale + padding, -padding);
+		drawLine(new Vector2(x, top), new Vector2(x, bottom), 1, "rgba(255, 255, 255, 0.25)");
+		drawText(x === 0 ? 0 : x.toPrecision(3), x * scale + padding, -padding);
+	}
+
+	// draw sub minor axis
+
+	step /= 5
+
+	console.log("hi: " + Date.now());
+
+	for (let y = MyMath.round(top, step); y < MyMath.round(bottom, step); y += step) {
+		drawLine(new Vector2(left, y), new Vector2(right, y), 1, "rgba(255, 255, 255, 0.1)");
+	}
+
+	for (let x = MyMath.round(left, step); x < MyMath.round(right, step); x += step) {
+		drawLine(new Vector2(x, top), new Vector2(x, bottom), 1, "rgba(255, 255, 255, 0.1)");
 	}
 
 	// draw major axis
@@ -192,14 +213,18 @@ setInterval(() => {
 
 	// update particles
 
+	let positions = [];
+
 	particles.forEach(pi => {
+		positions.push(pi.pos);
+
 		// update with gravity
 		
 		particles.forEach(pj => {
 			if (pi === pj) return;
 
 			const direction = pj.pos.sub(pi.pos);
-			const distance = Math.max(direction.magnitude, minDistance);
+			const distance = Math.max(direction.magnitude, pi.mass + pj.mass);
 			const magnitude = pi.mass * pj.mass / distance ** 2;
 
 			const force = direction.unit.mul(magnitude * timestep.value);
@@ -214,6 +239,7 @@ setInterval(() => {
 
 		// draw particle
 
-		pi.draw();
+		ctx.drawCircle(pi.pos, pi.mass);
+		ctx.drawArrow(pi.pos, pi.pos.add(pi.vel.mul(100)), 1 / scale, "red");
 	})
 }, 0)

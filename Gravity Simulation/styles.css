@@ -8,14 +8,16 @@
 	padding: 0;
 
 	user-select: none;
+
+	/* outline: 1px solid white !important; */
 }
 
 body {
-	background-color: black;
 	overflow: hidden;
 }
 
 #canvas {
+	background-color: black;
 	position: fixed;
 	z-index: -1;
 	top: 0;
@@ -30,7 +32,7 @@ body {
 
 #inputs {
 	padding: 1rem;
-	width: 25%;
+	position: fixed;
 
 	background-color: rgba(255, 255, 255, 0.1);
 	border-end-end-radius: 1rem;
@@ -39,6 +41,12 @@ body {
 	display: grid;
 	grid-template-columns: max-content 1fr minmax(6ch, max-content);
 	gap: 1rem;
+
+	h3 {
+		border-bottom: 1px solid white;
+		padding-bottom: 0.5rem;
+		margin-top: 1rem;
+	}
 }
 
 .value {
@@ -71,7 +79,8 @@ input[type="range"]:hover {
 input[type="range"] {
 	appearance: none;
 	background-color: transparent;
-
+	border: 2px solid rgba(255, 255, 255, 0.1);
+	border-radius: 100vw;
 	cursor: pointer;
 }
 

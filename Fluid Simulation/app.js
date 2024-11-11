@@ -93,9 +93,9 @@ const gravity = new Vector2(0, 9.8);
 const restitution = 0.75;
 
 const particle_count = 1000;
-const particle_radius = 3
+const particle_radius = 7;
 
-grab_radius = particle_radius * 50
+grab_radius = 200;
 
 class particle {
 	constructor() {
