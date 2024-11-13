@@ -1,3 +1,5 @@
+// classes
+
 class Vector2 {
 	constructor(x = 0, y = x) {
 		this._x = x;
@@ -19,8 +21,16 @@ class Vector2 {
 
 	mul(int) {return new Vector2(this._x * int, this._y * int);}
 	div(int) {
-		if (int === 0) {int = 0.00001};
+		if (int === 0) {new Error("Divide vec by zero")};
+
 		return new Vector2(this._x / int, this._y / int);
+	}
+
+	clamp(xMin, xMax, yMin, yMax) {
+		return new Vector2(
+			this._x.clamp(xMin, xMax),
+			this._y.clamp(yMin, yMax)
+		)
 	}
 
 	// attritutes
@@ -33,8 +43,8 @@ class Vector2 {
 		return this.div(this.magnitude);
 	}
 
-	get randomComponent() {
-		return Math.random() * (this.max - this.min) + this.min;
+	get randomized() {
+		return new Vector2(Math.random() * this._x, Math.random() * this._y);
 	}
 
 	get min() {return Math.min(this._x, this._y);}
@@ -53,6 +63,37 @@ class Vector2 {
 		)
 	}
 }
+
+class Clock {
+	constructor() {
+		this.last_tick = 0;
+		this.elapsed = 0;
+		this.dt = 0;
+	}
+
+	get now() {return window.performance.now() / 1000;}
+
+	tick() {
+		this.dt = this.now - this.last_tick;
+		this.last_tick = this.now;
+
+		return this.dt;
+	}
+}
+
+// prototypes
+
+// numbers
+
+Number.prototype.clamp = function(min, max) {
+	return Math.min(Math.max(this, min), max);
+}
+
+Number.prototype.between = function(min, max) {
+	return this > min && this < max;
+}
+
+// canvas contexts
 
 CanvasRenderingContext2D.prototype.drawCircle = function(pos, radius, color = "white") {
 	this.beginPath();
@@ -96,10 +137,22 @@ CanvasRenderingContext2D.prototype.drawArrow = function(from, to, width, color =
     this.fill();
 }
 
+CanvasRenderingContext2D.prototype.drawSquare = function(pos, size, stroke, color = "white") {
+	if (stroke) {
+		this.strokeStyle = color;
+		this.strokeRect(pos.x, pos.y, size.x, size.y);
+	} else {
+		this.fillStyle = color;
+		this.fillRect(pos.x, pos.y, size.x, size.y);
+	}
+}
+
+// xxxxx.yyyyy modules
+
 const MyMath = {
     random: (min, max) => Math.random() * (max - min) + min,
 
 	round: (n, multiple) => Math.ceil(n / multiple) * multiple,
 };
 
-export {Vector2, MyMath};
+export {Vector2, Clock, MyMath};

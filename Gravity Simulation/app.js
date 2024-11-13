@@ -1,4 +1,4 @@
-import {Vector2, MyMath} from "./classes.js";
+import {Vector2, MyMath} from "../classes.js";
 
 // update canvas size
 
@@ -119,19 +119,6 @@ window.addEventListener("keyup", (event) => {
 	}
 })
 
-// hover value
-
-const hoverValue = document.getElementById("hover-value");
-
-canvas.addEventListener("mousemove", (event) => {
-	hoverValue.style.left = event.clientX + "px";
-	hoverValue.style.top = event.clientY + "px";
-
-    const transformed = getMouseCoords(event);
-
-	hoverValue.textContent = "(" + transformed.x.toPrecision(3) + ", " + transformed.y.toPrecision(3) + ")";
-})
-
 // zooming
 
 const zoomSpeed = 1.1;
@@ -196,8 +183,6 @@ setInterval(() => {
 
 	step /= 5
 
-	console.log("hi: " + Date.now());
-
 	for (let y = MyMath.round(top, step); y < MyMath.round(bottom, step); y += step) {
 		drawLine(new Vector2(left, y), new Vector2(right, y), 1, "rgba(255, 255, 255, 0.1)");
 	}
@@ -240,6 +225,6 @@ setInterval(() => {
 		// draw particle
 
 		ctx.drawCircle(pi.pos, pi.mass);
-		ctx.drawArrow(pi.pos, pi.pos.add(pi.vel.mul(100)), 1 / scale, "red");
+		// ctx.drawArrow(pi.pos, pi.pos.add(pi.vel.mul(100)), 1 / scale, "red");
 	})
 }, 0)
