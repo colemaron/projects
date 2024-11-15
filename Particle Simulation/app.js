@@ -16,21 +16,6 @@ window.addEventListener('resize', resizeCanvas);
 
 resizeCanvas()
 
-// cells
-
-const cell_count = 100;
-
-const cells = [];
-
-class cell {
-	constructor(pos, size) {
-		this.pos = pos;
-		this.size = size;
-
-		// idk idk idk
-	}
-}
-
 // particles
 
 const gravity = 9.8;
