@@ -24,12 +24,6 @@ body {
 	left: 0;
 }
 
-#canvas:hover {
-	~ #hover-value {
-		display: block;
-	}
-}
-
 #inputs {
 	padding: 1rem;
 	position: fixed;
@@ -46,33 +40,6 @@ body {
 		border-bottom: 1px solid white;
 		padding-bottom: 0.5rem;
 		margin-top: 1rem;
-	}
-}
-
-.value {
-	position: fixed;
-
-	pointer-events: none;
-}
-
-#hover-value {
-	background-color: transparent;
-	padding: 0.25rem;
-	display: none;
-	color: white;
-}
-
-#slider-value {
-	display: none;
-	background-color: white;
-	color: black;
-	padding: 0.5rem 1rem;
-	border-radius: 0.75rem;
-}
-
-input[type="range"]:hover {
-	~ #slider-value {
-		display: block;
 	}
 }
 
