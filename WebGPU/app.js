@@ -17,9 +17,9 @@ ctx.configure({
 
 const zoomSpeed = 1.1;
 
-const particleCount = 10000;
+const particleCount = 7000;
 const particleComponents = 4;
-const g = 100;
+const g = 10000;
 
 const f32Bytes = 4;
 
@@ -40,7 +40,7 @@ for (let i = 0; i < particleCount; i++) {
 
 	// get velocity
 
-	const speed = Math.sqrt(g / r) * 3.7e7;
+	const speed = Math.sqrt(g / r) * 3.5e7;
 
 	// apply values
 
@@ -146,7 +146,7 @@ document.addEventListener("mousemove", (event) => {
 
 // create render pipeline
 
-const code = await fetch(`../shader.wgsl`).then(result => result.text());
+const code = await fetch("shader.wgsl").then(result => result.text());
 const shader = device.createShaderModule({ code });
 
 const renderBindGroupLayout = device.createBindGroupLayout({

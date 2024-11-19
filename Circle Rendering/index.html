@@ -10,6 +10,7 @@
 	<style>
 		body {
 			background-color: black;
+			overflow: hidden;
 		}
 
 		canvas {
@@ -22,18 +23,5 @@
 </head>
 <body>
 	<canvas></canvas>
-
-	<script>
-		const canvas = document.querySelector("canvas");
-
-		function resize() {
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-		}
-
-		window.onresize = resize;
-
-		resize();
-	</script>
 </body>
 </html>

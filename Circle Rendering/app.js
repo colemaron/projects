@@ -3,9 +3,9 @@ const device = await adapter.requestDevice();
 
 // constants
 
-const particleCount = 2;
-const particleEntries = 6; // idk why this works at 6 but not 5 like how it should be ???????????????
-// posX | posY | velX | velY | mass 
+const particleCount = 100;
+const particleEntries = 6; // posX | posY | velX | velY | mass | UNUSED PLACEHOLDER
+// needs to be multiple of 24 so cant be 5
 
 const f32Bytes = 4;
 
@@ -41,6 +41,10 @@ for (let i = 0; i < particleCount; i++) {
 	// mass
 
 	particleArray[index + 4] = (2 * Math.random() + 1) / 100;
+
+	// UNUSED PLACEHOLDER
+
+	particleArray[index + 5] = 0;
 }
 
 // create particle buffer
@@ -54,7 +58,7 @@ device.queue.writeBuffer(particleBuffer, 0, particleArray);
 
 // create render pipeline
 
-const code = await fetch(`../shader.wgsl`).then(result => result.text());
+const code = await fetch(`shader.wgsl`).then(result => result.text());
 const shader = device.createShaderModule({ code });
 
 const renderPipeline = device.createRenderPipeline({
@@ -70,7 +74,7 @@ const renderPipeline = device.createRenderPipeline({
 	},
 });
 
-const particleBindGroup = device.createBindGroup({
+const renderBindGroup = device.createBindGroup({
 	layout: renderPipeline.getBindGroupLayout(0),
 	entries: [
 		{
@@ -78,26 +82,45 @@ const particleBindGroup = device.createBindGroup({
 			resource: {
 				buffer: particleBuffer,
 			}
-		}
+		},
 	]
 })
 
-const commandEncoder = device.createCommandEncoder();
+// main loop
 
-const renderPass = commandEncoder.beginRenderPass({
-	colorAttachments: [
-		{
-			view: ctx.getCurrentTexture().createView(),
-			clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-			loadOp: "clear",
-			storeOp: "store",
-		},
-	],
-})
+function main() {
+	const commandEncoder = device.createCommandEncoder();
 
-renderPass.setPipeline(renderPipeline);
-renderPass.setBindGroup(0, particleBindGroup)
-renderPass.draw(3, particleCount);
-renderPass.end();
+	const renderPass = commandEncoder.beginRenderPass({
+		colorAttachments: [
+			{
+				view: ctx.getCurrentTexture().createView(),
+				clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+				loadOp: "clear",
+				storeOp: "store",
+			},
+		],
+	})
 
-device.queue.submit([commandEncoder.finish()]);
+	renderPass.setPipeline(renderPipeline);
+	renderPass.setBindGroup(0, renderBindGroup)
+	renderPass.draw(3, particleCount);
+	renderPass.end();
+
+	device.queue.submit([commandEncoder.finish()]);
+
+	window.requestAnimationFrame(main);
+}
+
+window.requestAnimationFrame(main);
+
+// resize canvas
+
+function resize() {
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+}
+
+window.onresize = resize;
+
+resize();

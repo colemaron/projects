@@ -54,25 +54,23 @@ fn cs_main(
 			if (i == j) { continue; }
 
 			let v: vec2<f32> = particles[j].xy - particles[i].xy;
-			let d: f32 = length(v);
+			let d: f32 = max(dot(v, v), 0.05);
 		
-			if (d > 0.01) {
-				let m: f32 = uniforms.g / (d * d);
+			let m: f32 = uniforms.g / d;
 
-				let force: vec2<f32> = normalize(v) * m;
+			let force: vec2<f32> = normalize(v) * m;
 
-				particles[i] += vec4<f32>(0.0, 0.0, force);
-				particles[j] -= vec4<f32>(0.0, 0.0, force);
-			}
+			particles[i] += vec4<f32>(0.0, 0.0, force);
+			particles[j] -= vec4<f32>(0.0, 0.0, force);
 		}
 
 		// update particle
 
-		particles[i] += vec4<f32>(particles[i].zw, 0.0, 0.0) / 1e11;
+		particles[i] += vec4<f32>(particles[i].zw / 1e11, 0.0, 0.0);
 
 		// update speeds
 
-		let speed: f32 = length(particles[i].zw);
+		let speed: f32 = dot(particles[i].zw, particles[i].zw);
 
 		local_min = min(local_min, speed);
 		local_max = max(local_max, speed);
@@ -95,19 +93,17 @@ fn vs_main(@location(0) particle: vec4<f32>) -> VertexOutput {
 	// get position
 
 	let screen_ratio = uniforms.size.x / uniforms.size.y;
+	let position: vec2<f32> = vec2<f32>(particle.x / screen_ratio, particle.y) + uniforms.offset;
 
-	let px: f32 = particle.x / screen_ratio + uniforms.offset.x;
-	let py: f32 = particle.y + uniforms.offset.y;
-
-	out.position = vec4<f32>(px, py, 0.0, uniforms.scale);
+	out.position = vec4<f32>(position, 0.0, uniforms.scale);
 
 	// send data
 
-	let speed: f32 = length(particle.zw);
-	let speed_ratio = (speed - uniforms.min) / (uniforms.max - uniforms.min);
+	let speed: f32 = dot(particle.zw, particle.zw);
+	let speed_ratio = 1 - (speed - uniforms.min) / (uniforms.max - uniforms.min);
 
-	out.particle = particle;
 	out.speed_ratio = speed_ratio;
+	out.particle = particle;
 
 	return out;
 }
@@ -116,5 +112,5 @@ fn vs_main(@location(0) particle: vec4<f32>) -> VertexOutput {
 
 @fragment
 fn fs_main(@location(0) particle: vec4<f32>, @location(1) speed_ratio: f32) -> @location(0) vec4<f32> {
-	return vec4<f32>(speed_ratio, 1 - speed_ratio, 0.6, 0.0);
+	return vec4<f32>(1.0, speed_ratio, 0, 0.0);
 }
