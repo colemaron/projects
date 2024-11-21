@@ -29,7 +29,7 @@ struct VertexOutput {
 var<workgroup> local_min: f32;
 var<workgroup> local_max: f32;
 
-@compute @workgroup_size(64)
+@compute @workgroup_size(128)
 fn cs_main(
 	@builtin(global_invocation_id) global_id : vec3<u32>,
 ) {
@@ -93,9 +93,9 @@ fn vs_main(@location(0) particle: vec4<f32>) -> VertexOutput {
 	// get position
 
 	let screen_ratio = uniforms.size.x / uniforms.size.y;
-	let position: vec2<f32> = vec2<f32>(particle.x / screen_ratio, particle.y) + uniforms.offset;
+	let position: vec2<f32> = vec2<f32>(particle.x / screen_ratio, particle.y);
 
-	out.position = vec4<f32>(position, 0.0, uniforms.scale);
+	out.position = vec4<f32>(position + uniforms.offset, 0.0, uniforms.scale);
 
 	// send data
 

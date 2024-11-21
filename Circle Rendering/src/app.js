@@ -1,13 +1,22 @@
+import { Utils } from "./utils.js"
+
+// get GPU
+
 const adapter = await navigator.gpu.requestAdapter();
 const device = await adapter.requestDevice();
 
 // constants
 
+const G = 1;
 const particleCount = 100;
 const particleEntries = 6; // posX | posY | velX | velY | mass | UNUSED PLACEHOLDER
 // needs to be multiple of 24 so cant be 5
 
 const f32Bytes = 4;
+
+// initialize
+
+Utils.setShaderPath("../shaders");
 
 // configure canvas
 
@@ -56,23 +65,66 @@ const particleBuffer = device.createBuffer({
 
 device.queue.writeBuffer(particleBuffer, 0, particleArray);
 
+// create uniform buffer
+
+// ratio | G
+
+const uniformBuffer = device.createBuffer({
+	size: 2 * f32Bytes,
+	usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+})
+
+// create compute pipeline
+
+const computeModule = await Utils.getShaderCode("compute");
+
+const computePipeline = device.createComputePipeline({
+	layout: "auto",
+	compute: {
+		module: device.createShaderModule({ code: computeModule }),
+		entryPoint: "main",
+	}
+})
+
+// compute bind group
+
+const computeBindGroup = device.createBindGroup({
+	layout: computePipeline.getBindGroupLayout(0),
+	entries: [
+		{
+			binding: 0,
+			resource: {
+				buffer: particleBuffer,
+			}
+		},
+		{
+			binding: 1,
+			resource: {
+				buffer: uniformBuffer,
+			}
+		},
+	]
+})
+
 // create render pipeline
 
-const code = await fetch(`shader.wgsl`).then(result => result.text());
-const shader = device.createShaderModule({ code });
+const vertexModule = await Utils.getShaderCode("vertex");
+const fragmentModule = await Utils.getShaderCode("fragment");
 
 const renderPipeline = device.createRenderPipeline({
 	layout: "auto",
 	vertex: {
-		module: shader,
-		entryPoint: "vs_main",
+		module: device.createShaderModule({ code: vertexModule }),
+		entryPoint: "main",
 	},
 	fragment: {
-		module: shader,
-		entryPoint: "fs_main",
+		module: device.createShaderModule({ code: fragmentModule }),
+		entryPoint: "main",
 		targets: [{ format }],
 	},
 });
+
+// render bind group
 
 const renderBindGroup = device.createBindGroup({
 	layout: renderPipeline.getBindGroupLayout(0),
@@ -83,6 +135,12 @@ const renderBindGroup = device.createBindGroup({
 				buffer: particleBuffer,
 			}
 		},
+		{
+			binding: 1,
+			resource: {
+				buffer: uniformBuffer,
+			}
+		},
 	]
 })
 
@@ -90,6 +148,17 @@ const renderBindGroup = device.createBindGroup({
 
 function main() {
 	const commandEncoder = device.createCommandEncoder();
+
+	// compute pass
+
+	const computePass = commandEncoder.beginComputePass();
+
+	computePass.setPipeline(computePipeline);
+	computePass.setBindGroup(0, computeBindGroup);
+	computePass.dispatch(Math.ceil(particleCount / 64));
+	computePass.end();
+
+	// render pass
 
 	const renderPass = commandEncoder.beginRenderPass({
 		colorAttachments: [
@@ -107,18 +176,34 @@ function main() {
 	renderPass.draw(3, particleCount);
 	renderPass.end();
 
+	// send commands
+
 	device.queue.submit([commandEncoder.finish()]);
+
+	// loop
 
 	window.requestAnimationFrame(main);
 }
 
 window.requestAnimationFrame(main);
 
+// update uniforms
+
+function updateUniforms() {
+	const uniformArray = new Float32Array([
+		canvas.width / canvas.height, // ratio
+	])
+
+	device.queue.writeBuffer(uniformBuffer, 0, uniformArray);
+}
+
 // resize canvas
 
 function resize() {
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
+
+	updateUniforms();
 }
 
 window.onresize = resize;
