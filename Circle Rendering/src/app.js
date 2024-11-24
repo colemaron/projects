@@ -7,16 +7,12 @@ const device = await adapter.requestDevice();
 
 // constants
 
-const G = 1;
-const particleCount = 100;
-const particleEntries = 6; // posX | posY | velX | velY | mass | UNUSED PLACEHOLDER
+const G = 0.000002;
+const particleCount = 10000;
 // needs to be multiple of 24 so cant be 5
 
+const particleEntries = 6; // posX | posY | velX | velY | mass | UNUSED PLACEHOLDER
 const f32Bytes = 4;
-
-// initialize
-
-Utils.setShaderPath("../shaders");
 
 // configure canvas
 
@@ -39,17 +35,25 @@ for (let i = 0; i < particleCount; i++) {
 
 	// position
 
-	particleArray[index + 0] = (Math.random() - 0.5) * 2;
-	particleArray[index + 1] = (Math.random() - 0.5) * 2;
+	const r = Math.random();
+	const theta = 2 * Math.PI * Math.random();
+
+	const x = r * Math.cos(theta);
+	const y = r * Math.sin(theta);
+
+	particleArray[index + 0] = x;
+	particleArray[index + 1] = y;
 
 	// velocity
 
-	particleArray[index + 2] = 0;
-	particleArray[index + 3] = 0;
+	const speed = Math.sqrt(G * r) * 6;
+
+	particleArray[index + 2] = -y * speed / r;
+	particleArray[index + 3] = x * speed / r;
 
 	// mass
 
-	particleArray[index + 4] = (2 * Math.random() + 1) / 100;
+	particleArray[index + 4] = (Math.random() + 1) / 25;
 
 	// UNUSED PLACEHOLDER
 
@@ -67,23 +71,21 @@ device.queue.writeBuffer(particleBuffer, 0, particleArray);
 
 // create uniform buffer
 
-// ratio | G
+// ratio | scale | G
 
 const uniformBuffer = device.createBuffer({
-	size: 2 * f32Bytes,
+	size: 3 * f32Bytes,
 	usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 })
 
 // create compute pipeline
 
-const computeModule = await Utils.getShaderCode("compute");
-
 const computePipeline = device.createComputePipeline({
 	layout: "auto",
 	compute: {
-		module: device.createShaderModule({ code: computeModule }),
+		module: await Utils.getShaderModule(device, "compute"),
 		entryPoint: "main",
-	}
+	},
 })
 
 // compute bind group
@@ -91,34 +93,21 @@ const computePipeline = device.createComputePipeline({
 const computeBindGroup = device.createBindGroup({
 	layout: computePipeline.getBindGroupLayout(0),
 	entries: [
-		{
-			binding: 0,
-			resource: {
-				buffer: particleBuffer,
-			}
-		},
-		{
-			binding: 1,
-			resource: {
-				buffer: uniformBuffer,
-			}
-		},
-	]
+		{ binding: 0, resource: { buffer: particleBuffer } },
+		{ binding: 1, resource: { buffer: uniformBuffer } },
+	],
 })
 
 // create render pipeline
 
-const vertexModule = await Utils.getShaderCode("vertex");
-const fragmentModule = await Utils.getShaderCode("fragment");
-
 const renderPipeline = device.createRenderPipeline({
 	layout: "auto",
 	vertex: {
-		module: device.createShaderModule({ code: vertexModule }),
+		module: await Utils.getShaderModule(device, "vertex"),
 		entryPoint: "main",
 	},
 	fragment: {
-		module: device.createShaderModule({ code: fragmentModule }),
+		module: await Utils.getShaderModule(device, "fragment"),
 		entryPoint: "main",
 		targets: [{ format }],
 	},
@@ -129,19 +118,9 @@ const renderPipeline = device.createRenderPipeline({
 const renderBindGroup = device.createBindGroup({
 	layout: renderPipeline.getBindGroupLayout(0),
 	entries: [
-		{
-			binding: 0,
-			resource: {
-				buffer: particleBuffer,
-			}
-		},
-		{
-			binding: 1,
-			resource: {
-				buffer: uniformBuffer,
-			}
-		},
-	]
+		{ binding: 0, resource: { buffer: particleBuffer } },
+		{ binding: 1, resource: { buffer: uniformBuffer } },
+	],
 })
 
 // main loop
@@ -155,7 +134,7 @@ function main() {
 
 	computePass.setPipeline(computePipeline);
 	computePass.setBindGroup(0, computeBindGroup);
-	computePass.dispatch(Math.ceil(particleCount / 64));
+	computePass.dispatchWorkgroups(Math.ceil(particleCount / 64));
 	computePass.end();
 
 	// render pass
@@ -189,13 +168,31 @@ window.requestAnimationFrame(main);
 
 // update uniforms
 
+let scale = 1;
+
 function updateUniforms() {
+	const ratio = canvas.width / canvas.height;
+
 	const uniformArray = new Float32Array([
-		canvas.width / canvas.height, // ratio
+		ratio,
+		scale,
+		G,
 	])
 
 	device.queue.writeBuffer(uniformBuffer, 0, uniformArray);
 }
+
+// zooming
+
+const zoomSpeed = 1.25;
+
+document.addEventListener("wheel", event => {
+	const delta = Math.sign(event.deltaY);
+
+	delta > 0 ? scale *= zoomSpeed : scale /= zoomSpeed;
+
+	updateUniforms();
+})
 
 // resize canvas
 

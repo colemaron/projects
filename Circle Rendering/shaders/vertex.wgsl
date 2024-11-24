@@ -19,10 +19,11 @@ struct Particle {
 
 struct Uniforms {
 	ratio: f32,
+	scale: f32,
 	G: f32,
 }
 
-// binding buffer INS
+// buffer bindings
 
 @group(0) @binding(0) var<storage, read> particles: array<Particle>;
 @group(0) @binding(1) var<uniform> uniforms: Uniforms;
@@ -50,9 +51,9 @@ fn main(vertex: VertexInput) -> VertexOutput {
 
 	// create and send position
 
-	let position = out.local_space * particle.mass + particle.position;
+	let position = out.local_space * particle.mass * particle.mass + particle.position;
 
-	out.position = vec4<f32>(position.x / uniforms.ratio, position.y, 0.0, 1.0);
+	out.position = vec4<f32>(position.x / uniforms.ratio, position.y, 0.0, uniforms.scale);
 
 	return out;
 }
