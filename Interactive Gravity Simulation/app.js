@@ -1,4 +1,4 @@
-import {Vector2, MyMath} from "../classes.js";
+import {Vector2, MyMath} from "./classes.js";
 
 // update canvas size
 

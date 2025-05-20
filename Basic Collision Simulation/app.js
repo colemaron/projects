@@ -1,4 +1,4 @@
-import {Vector2, Clock} from "../classes.js";
+import {Vector2, Clock} from "./classes.js";
 
 // canvas
 
@@ -21,7 +21,7 @@ resizeCanvas()
 const gravity = 9.8;
 const restitution = 0.95;
 
-const particle_count = 100;
+const particle_count = 1000;
 const particle_radius = 5;
 
 const particles = [];
